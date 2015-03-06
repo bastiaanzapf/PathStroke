@@ -146,6 +146,7 @@ def directedMatrix2(a, b, c, d):
 
     return A
 
+
 def directedSpline(p, a, b, c, d, e, f):
     """
     Return control points of a Spline through three points p, with
@@ -264,12 +265,12 @@ def integral(c):
     a1 = c[1]
     a2 = c[2]
     a3 = c[3]
-    P = [1 / 7.0 * a0 ** 2, 
-         1 / 3.0 * a0 * a1, 
+    P = [1 / 7.0 * a0 ** 2,
+         1 / 3.0 * a0 * a1,
          2 / 5.0 * a0 * a3 + 1 / 5.0 * a1 ** 2,
          1 / 2.0 * a0 * a3 + 1 / 2.0 * a1 * a2,
          2 / 3.0 * a1 * a3 + 1 / 3.0 * a2 ** 2,
-         a2 * a3, 
+         a2 * a3,
          a3 ** 2]
 
-    return numpy.polyval(P,1)
+    return numpy.polyval(P, 1)

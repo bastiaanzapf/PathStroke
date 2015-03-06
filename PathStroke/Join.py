@@ -3,6 +3,7 @@ from pyx import *
 import math
 import Splines
 
+
 def roundJoin(p1, p2, x, y, dist):
     """
     return a circle segment with radius dist about (x, y) joining paths 
@@ -145,7 +146,7 @@ def joinPaths(joinType, p1, p2, x, y, dist):
 
         (x0, y0) = p1.atend()
         (x1, y1) = p2.atbegin()
-        
+
         return path.line(x0, y0, x1, y1)
 
     if (joinType == 'miter'):

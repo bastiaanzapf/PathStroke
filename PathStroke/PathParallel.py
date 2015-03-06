@@ -5,27 +5,87 @@ from Vector import *
 import CurveParallel
 import Join
 
-def pathParallel(skeleton,dist=10,joinType='bevel',debug=None):
+def joinOrSplit(p1, p2, joinType, dist, x, y):
+    """
+    cut p1 and p2 or append a join segment    
+    either intersect or add a join about (x, y) in distance dist
+    returns [p1_, p2_, join]
+    """
 
-    strokes=[]
+    joinSegment = None
 
-    parallel=path.path()
+    a = p1.intersect(p2)
     
-    lastPoint=None
+    if (len(a[0]) > 0):
+
+        s1 = p1.split(a[0])
+        s2 = p2.split(a[1])
+
+        if len(a[0]) == 1:
+        
+            p1 = s1[0]
+            p2 = s2[1]
+            
+        else:
+            
+            raise Exception("More than one intersection point")
+
+    else:
+
+        joinSegment = Join.joinPaths(joinType,
+                                     p1,
+                                     p2,
+                                     x, y, dist)
+
+    return [p1, p2, joinSegment]
+                    
+def mergeCurves(curves):
+    """
+    Merge several curve segments
+    """
+    p = path.curve(*curves[0])
+            
+    for a in curves[1:]:
+
+        c = path.curve(*a)
+
+        s = p.intersect(c)
+
+        if (len(s[0]) > 0):
+            ps = p.split(s[0][0])
+            cs = c.split(s[1][0])
+
+            p = ps[0] << cs[1]
+        else:
+            p = p << c
+
+    return p
+
+
+def pathParallel(skeleton, dist=10, joinType='bevel', debug=None):
+
+    strokes = []
+
+    parallel = path.path()
+
+    lastPoint = None
+    previousParallelSegment = None
+
+    close = False
 
     for apathitem in skeleton:
 
-        if isinstance (apathitem, path.moveto):
+        if isinstance(apathitem, path.moveto):
 
-            lastPoint = (apathitem.x_pt,apathitem.y_pt)
+            lastPoint = (apathitem.x_pt, apathitem.y_pt)
             currentPoint = lastPoint
 
             continue
 
-        elif isinstance (apathitem, path.lineto):
+        elif isinstance(apathitem, path.lineto):
 
             lastPoint = currentPoint
-            currentPoint = (apathitem.x_pt,apathitem.y_pt)
+            currentPoint = (apathitem.x_pt, apathitem.y_pt)
 
             normal = dist * \
                 (Vector(*lastPoint) - Vector(*currentPoint)) \
@@ -34,97 +94,85 @@ def pathParallel(skeleton,dist=10,joinType='bevel',debug=None):
             x0 = (Vector(*lastPoint) + normal)
             x1 = (Vector(*currentPoint) + normal)
 
-            parallelSegment = path.line(x0.x[0],x0.x[1],
-                                        x1.x[0],x1.x[1])
+            parallelSegment = path.line(x0.x[0], x0.x[1],
+                                        x1.x[0], x1.x[1])
 
-        elif isinstance (apathitem, path.curveto):
-                        
+        elif isinstance(apathitem, path.curveto):
+
             lastPoint = currentPoint
-            currentPoint = (apathitem.x3_pt,apathitem.y3_pt)
+            currentPoint = (apathitem.x3_pt, apathitem.y3_pt)
 
             curves = CurveParallel.curveParallel(
                 [lastPoint[0], lastPoint[1],
-                 apathitem.x1_pt,apathitem.y1_pt,
-                 apathitem.x2_pt,apathitem.y2_pt,
-                 apathitem.x3_pt,apathitem.y3_pt]
-                ,dist,0)
+                 apathitem.x1_pt, apathitem.y1_pt,
+                 apathitem.x2_pt, apathitem.y2_pt,
+                 apathitem.x3_pt, apathitem.y3_pt], dist, 0)
 
-            parallelSegment = path.curve(*curves[0])
+            parallelSegment = mergeCurves(curves)
 
-            for a in curves[1:]:
+        elif isinstance(apathitem, path.closepath):
 
-                c = path.curve(*a)
-                path.set(1e-10)
-                s = parallelSegment.intersect(c)
+            close = True
 
-                if (len(s[0])>0):
-                    ps = parallelSegment.split(s[0][0])
-                    cs = c.split(s[1][0])
-
-                    parallelSegment = ps[0] << cs[1]
-                else:
-                    parallelSegment = parallelSegment << c
-                path.set(1e-5)
-
-        elif isinstance (apathitem, path.closepath):
-
-            pass
+            parallelSegment = None
 
         else:
-            raise Exception("Can't handle path item %s" % repr(apathitem))
+            raise Exception('''Can't handle path item %s''' % repr(apathitem))
 
-        assert(parallelSegment)
+        if not(parallelSegment is None):
 
-        if (len(parallel)>0):
+            (x, y) = (unit.topt(lastPoint[0]),
+                      unit.topt(lastPoint[1]))        
 
-            path.set(1e-10)
+            if not(previousParallelSegment is None):
 
-            a = parallel.intersect(parallelSegment)
+                [previousParallelSegment, parallelSegment, joinSegment] \
+                    = joinOrSplit(previousParallelSegment, \
+                                      parallelSegment, \
+                                      joinType, dist, x, y)
 
-            path.set(1e-5)
+                if not(joinSegment is None):
+                    parallelSegment = joinSegment << parallelSegment
 
-#            debug.stroke(parallelSegment,[color.rgb(1,0,0),
-#                                          style.linewidth.THICK])
+                if len(parallel) > 0:
+                    parallel = parallel << previousParallelSegment
+                else:
+                    parallel = previousParallelSegment
 
-            if (len(a[0])>0):
-                parallelSegment = parallelSegment.split(a[1])[-1]
-                parallel = parallel.split(a[0])[0]
-            else:
+            previousParallelSegment = parallelSegment
 
-                (x,y)=(unit.topt(lastPoint[0]),unit.topt(lastPoint[1]))
+        if close:
+            
+            # this is a different situation than above:
+            # an intersection point must be a true self-intersection
+            # of a closed path, not two parallel segments intersecting
 
-                p0 = parallel.atend()
-                (x0,y0)=(unit.topt(p0[0]),unit.topt(p0[1]))
+            s = parallel.intersect(previousParallelSegment)
 
-                p1 = parallelSegment.atbegin()
-                (x1,y1)=(unit.topt(p1[0]),unit.topt(p1[1]))
+            # the second condition is necessary for spurious intersections
+            # at the start of a parallel segment
 
-                t0 = parallel.tangent(parallel.end(),1)[0][0]
+            if (len(s[0]) == 0) | (s[1][0].normsubpathparam < 1e-5):
 
-                t1 = parallelSegment.tangent(parallelSegment.begin(),1)[0][0]
+                parallel = parallel << previousParallelSegment
 
-                (t0x,t0y)=(unit.topt(t0.x1_pt),unit.topt(t0.y1_pt))
-                (t1x,t1y)=(unit.topt(t1.x1_pt),unit.topt(t1.y1_pt))
+                (x, y) = (unit.topt(currentPoint[0]),
+                          unit.topt(currentPoint[1]))        
 
                 joinSegment = Join.joinPaths(joinType,
-                                             (x0,y0),
-                                             (x1,y1),
-                                             t0x,t0y,t1x,t1y,
-                                             x,y,dist,debug)
-                parallel = parallel.joined(joinSegment)
+                                             parallel,
+                                             parallel,
+                                             x, y, dist)
 
-                path.set(1e-10)
-                a = parallel.intersect(parallelSegment)
-                path.set(1e-5)
+                parallel = parallel << joinSegment
+                parallel.append(path.closepath())
 
-                if (len(a[0])>0):
-                    parallelSegment = parallelSegment.split(a[1][0])[1]
-                    parallel = parallel.split(a[0][0])[0]
+            else:
+                assert len(s[0]) == 1
+                parallel = parallel.split(s[0])[1]
+                previousParallelSegment = previousParallelSegment.split(s[1])[0]
 
-            parallel = parallel.joined(parallelSegment)
-
-        else:
-            parallel = parallelSegment
-
+                parallel = parallel << previousParallelSegment
+#                parallel.append(path.closepath())
 
     return parallel

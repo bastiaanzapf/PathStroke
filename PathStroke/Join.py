@@ -3,113 +3,132 @@ from pyx import *
 import math
 import Splines
 
-def roundJoin(p1,p2,x,y,dx1,dy1,dx2,dy2,dist,debug):
+def roundJoin(p1, p2, x, y, dist):
+    """
+    return a circle segment with radius dist about (x, y) joining paths 
+    p1 and p2
+    """
 
-    CircleConstant = 3.0/4*(math.sqrt(2)-1)
+    # this has to be cleaned up
 
-    assert isinstance(p1,tuple)
-    assert isinstance(p2,tuple)
+    t0 = p1.tangent(p1.end(), 1)[0][0]
 
-    (x0,y0) = p1
-    (x3,y3) = p2
+    t1 = p2.tangent(p2.begin(), 1)[0][0]
 
-    (dx0,dy0)=(x-x0,y-y0)
-    (dx3,dy3)=(x-x3,y-y3)
+    (dx1, dy1) = (unit.topt(t0.x1_pt), unit.topt(t0.y1_pt))
+    (dx2, dy2) = (unit.topt(t1.x1_pt), unit.topt(t1.y1_pt))
 
-    alpha = math.atan2(dy0,dx0)
-    delta = math.atan2(dy3,dx3)
+    (x0, y0) = p1.atend()
+    (x1, y1) = p2.atbegin()
 
-    angle = delta-alpha
+    (x0, y0) = (unit.topt(x0), unit.topt(y0))
+    (x1, y1) = (unit.topt(x1), unit.topt(y1))
 
-    if (abs(angle) < math.pi/2):
+    p1_ = (x0, y0)
+    p2_ = (x1, y1)
 
-        f = math.sin(alpha-delta)
+    assert isinstance(p1_, tuple)
+    assert isinstance(p2_, tuple)
 
-        (x1,y1) = (x0+math.sin(alpha)*f*dist*CircleConstant,
-                   y0-math.cos(alpha)*f*dist*CircleConstant)
-        
-        (x2,y2) = (x3-math.sin(delta)*f*dist*CircleConstant,
-                   y3+math.cos(delta)*f*dist*CircleConstant)
+    (x0, y0) = p1_
+    (x3, y3) = p2_
 
-        return path.curve(x0,y0,x1,y1,x2,y2,x3,y3)
+    (dx0, dy0) = (x - x0, y - y0)
+    (dx3, dy3) = (x - x3, y - y3)
+
+    alpha = math.atan2(dy0, dx0)
+    delta = math.atan2(dy3, dx3)
+
+    angle = delta - alpha
+
+    beta = (alpha + delta) * 0.5
+
+    (xs, ys) = (x - math.cos(beta) * abs(dist),
+                y - math.sin(beta) * abs(dist))
+
+    if (abs(angle) < math.pi / 2):
+
+        A = Splines.directedSpline([(x0, y0), (xs, ys), (x3, y3)],
+                                   dx1 - x0, dy1 - y0, x3 - dx2, y3 - dy2,
+                                   0, 0)
+
+        return path.curve(*A)
 
     else:
 
-        beta = (alpha+delta)*0.5
+        (dxs, dys) = (-math.sin(beta),
+                      math.cos(beta))
 
-        (xs,ys) = (x-math.cos(beta)*abs(dist),
-                   y-math.sin(beta)*abs(dist))
-        
-        (dxs,dys) = ( -math.sin(beta),
-                       math.cos(beta))
+        (dx0, dy0) = (dx1 - x0, dy1 - y0)
+        (dx3, dy3) = (x3 - dx2, y3 - dy2)
 
-        (dx0,dy0) = (dx1-x0,dy1-y0)
-        (dx3,dy3) = (x3-dx2,y3-dy2)
+        a = 1.0 / math.sqrt(2)
 
-        assert abs(math.sqrt(dx0**2+dy0**2)-1)<1e-5
-        assert abs(math.sqrt(dx3**2+dy3**2)-1)<1e-5
+        epsilon = (alpha + beta) * 0.5
 
-        f = CircleConstant*abs(dist)*math.sin((alpha-delta)*0.5)
+        (x1, y1) = (x - math.cos(epsilon) * abs(dist),
+                    y - math.sin(epsilon) * abs(dist))
 
-        a = 1.0/math.sqrt(2)
+        A = Splines.directedSpline([(x0, y0), (x1, y1), (xs, ys)],
+                                   dx0, dy0, dxs, dys, 0, 0)
 
-        (x,y) = (x0+(xs-x0)*(1-a),y0+(ys-y0)*(a))
+        phi = (beta + delta) * 0.5
 
-        A = Splines.directedSpline([(x0,y0),(x,y),(xs,ys)],
-                                       dx0,dy0,dxs,dys,0,0)
+        (x2, y2) = (x - math.cos(phi) * abs(dist),
+                    y - math.sin(phi) * abs(dist))
 
-        (x,y) = (x3+(xs-x3)*(1-a),y3+(ys-y3)*(a))
-
-        B = Splines.directedSpline([(xs,ys),(x,y),(x3,y3)],
-                                       dxs,dys,dx3,dy3,0,0)
+        B = Splines.directedSpline([(xs, ys), (x2, y2), (x3, y3)],
+                                   dxs, dys, dx3, dy3, 0, 0)
 
         c1 = path.curve(*A)
         c2 = path.curve(*B)
 
         return c1 << c2
 
-def hollowJoin(p1,p2,x,y,dist):
-    (x0,y0)=p1.atend()
-    (x3,y3)=p2.atbegin()
-    
-    (x0,y0)=(unit.topt(x0),unit.topt(y0))
-    (x3,y3)=(unit.topt(x3),unit.topt(y3))
 
-    (dx0,dy0)=(x0-x,y0-y)
-    (dx3,dy3)=(x3-x,y3-y)
+def hollowJoin(p1, p2, x, y, dist):
+    (x0, y0) = p1.atend()
+    (x3, y3) = p2.atbegin()
 
-    mangle = ((x0+x3)*0.5,(y0+y3)*0.5)
+    (x0, y0) = (unit.topt(x0), unit.topt(y0))
+    (x3, y3) = (unit.topt(x3), unit.topt(y3))
 
-    alpha = math.atan2(dy0,dx0)
-    delta = math.atan2(dy3,dx3)
+    (dx0, dy0) = (x0 - x, y0 - y)
+    (dx3, dy3) = (x3 - x, y3 - y)
 
-    beta = (alpha*2.0+delta)/3.0
-    gamma = (alpha+delta*2.0)/3.0
+    mangle = ((x0 + x3) * 0.5, (y0 + y3) * 0.5)
 
-    if alpha<delta:
+    alpha = math.atan2(dy0, dx0)
+    delta = math.atan2(dy3, dx3)
+
+    beta = (alpha * 2.0 + delta) / 3.0
+    gamma = (alpha + delta * 2.0) / 3.0
+
+    if alpha < delta:
         dist = -dist
-            
-    (x1,y1) = (mangle[0] - math.cos(gamma)*dist, 
-               mangle[1] - math.sin(gamma)*dist)
-    (x2,y2) = (mangle[0] - math.cos(beta )*dist, 
-               mangle[1] - math.sin(beta )*dist)
+
+    (x1, y1) = (mangle[0] - math.cos(gamma) * dist,
+                mangle[1] - math.sin(gamma) * dist)
+    (x2, y2) = (mangle[0] - math.cos(beta) * dist,
+                mangle[1] - math.sin(beta) * dist)
 
     return path.curve(
-        *Splines.naturalSpline([(x0,y0),(x1,y1),(x2,y2),(x3,y3)])
-        )
+        *Splines.naturalSpline([(x0, y0), (x1, y1), (x2, y2), (x3, y3)])
+    )
 
-def miterJoin(p1,p2,dist):
+
+def miterJoin(p1, p2, dist):
     """
-    Extend tangents of two paths for a certain distance, cut them in the 
+    Extend tangents of two paths for a certain distance, cut them in the
     intersection point. p1 is pointing outwards, p2 inwards.
     """
 
-    t1=p1.tangent(p1.end(),dist)
-    t2=p2.tangent(p2.begin(),-dist)
-        
-    intersections=t1.intersect(t2)
+    t1 = p1.tangent(p1.end(), dist)
+    t2 = p2.tangent(p2.begin(), -dist)
 
-    if (len(intersections[0])>0):
+    intersections = t1.intersect(t2)
+
+    if (len(intersections[0]) > 0):
 
         segment1 = t1.split(intersections[0])[0]
         segment2 = t2.split(intersections[1])[0]
@@ -119,21 +138,24 @@ def miterJoin(p1,p2,dist):
     else:
         return t1.joined(t2.reversed())
 
-def joinPaths(joinType,p1,p2,dx1,dy1,dx2,dy2,x,y,dist,debug):
-    if (joinType=='bevel'):
 
-        (x0,y0)=p1.atend()
-        (x1,y1)=p2.atbegin()
-        return path.line(x0,y0,x1,y1)
+def joinPaths(joinType, p1, p2, x, y, dist):
 
-    if (joinType=='miter'):
+    if (joinType == 'bevel'):
 
-        return miterJoin(p1,p2,abs(dist*0.5))
+        (x0, y0) = p1.atend()
+        (x1, y1) = p2.atbegin()
+        
+        return path.line(x0, y0, x1, y1)
 
-    if (joinType=='round'):
+    if (joinType == 'miter'):
 
-        return roundJoin(p1,p2,x,y,dx1,dy1,dx2,dy2,dist,debug)
+        return miterJoin(p1, p2, abs(dist * 0.5))
 
-    if (joinType=='hollow'):
+    if (joinType == 'round'):
 
-        return hollowJoin(p1,p2,x,y,dist)
+        return roundJoin(p1, p2, x, y, dist)
+
+    if (joinType == 'hollow'):
+
+        return hollowJoin(p1, p2, x, y, dist)

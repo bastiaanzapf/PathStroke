@@ -64,7 +64,7 @@ def mergeCurves(curves):
     return p
 
 
-def pathParallel(skeleton, dist=10, joinType='bevel', debug=None):
+def pathParallel(skeleton, dist=10, joinType='bevel'):
 
     strokes = []
 
@@ -76,6 +76,8 @@ def pathParallel(skeleton, dist=10, joinType='bevel', debug=None):
     close = False
 
     for apathitem in skeleton:
+
+        assert not(close)
 
         if isinstance(apathitem, path.moveto):
 
@@ -154,7 +156,7 @@ def pathParallel(skeleton, dist=10, joinType='bevel', debug=None):
             # the second condition is necessary for spurious intersections
             # at the start of a parallel segment
 
-            if (len(s[0]) == 0) | (s[1][0].normsubpathparam < 1e-5):
+            if ((len(s[0]) == 0) or (s[1][0].normsubpathparam < 1e-5)):
 
                 parallel = parallel << previousParallelSegment
 
@@ -177,5 +179,15 @@ def pathParallel(skeleton, dist=10, joinType='bevel', debug=None):
 
                 parallel = parallel << previousParallelSegment
                 parallel.append(path.closepath())
+
+    if (not(close) and (not(previousParallelSegment is None))):
+
+        if len(parallel) > 0:
+
+            parallel = parallel << previousParallelSegment
+            
+        else:
+
+            parallel = previousParallelSegment
 
     return parallel

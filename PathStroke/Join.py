@@ -48,38 +48,49 @@ def roundJoin(p1, p2, x, y, dist):
                 y - math.sin(beta) * abs(dist))
 
     if (abs(angle) < math.pi / 2):
+        
+        p = []
 
-        A = Splines.directedSpline([(x0, y0), (xs, ys), (x3, y3)],
-                                   dx1 - x0, dy1 - y0, x3 - dx2, y3 - dy2,
-                                   0, 0)
+        for stop in range(0,4):
+
+            beta = alpha + angle/3.0*stop 
+
+            (x1, y1) = (x - math.cos(beta) * abs(dist),
+                        y - math.sin(beta) * abs(dist))
+
+            p.append((x1, y1))
+
+        A = Splines.naturalSpline(p)
 
         return path.curve(*A)
 
     else:
 
-        (dxs, dys) = (-math.sin(beta),
-                      math.cos(beta))
+        p = []
 
-        (dx0, dy0) = (dx1 - x0, dy1 - y0)
-        (dx3, dy3) = (x3 - dx2, y3 - dy2)
+        for stop in range(0,4):
 
-        a = 1.0 / math.sqrt(2)
+            beta = alpha + angle/6.0*stop 
 
-        epsilon = (alpha + beta) * 0.5
+            (x1, y1) = (x - math.cos(beta) * abs(dist),
+                        y - math.sin(beta) * abs(dist))
 
-        (x1, y1) = (x - math.cos(epsilon) * abs(dist),
-                    y - math.sin(epsilon) * abs(dist))
+            p.append((x1, y1))
 
-        A = Splines.directedSpline([(x0, y0), (x1, y1), (xs, ys)],
-                                   dx0, dy0, dxs, dys, 0, 0)
+        A = Splines.naturalSpline(p)
 
-        phi = (beta + delta) * 0.5
+        p = []
 
-        (x2, y2) = (x - math.cos(phi) * abs(dist),
-                    y - math.sin(phi) * abs(dist))
+        for stop in range(3,7):
 
-        B = Splines.directedSpline([(xs, ys), (x2, y2), (x3, y3)],
-                                   dxs, dys, dx3, dy3, 0, 0)
+            beta = alpha + angle/6.0*stop 
+
+            (x1, y1) = (x - math.cos(beta) * abs(dist),
+                        y - math.sin(beta) * abs(dist))
+
+            p.append((x1, y1))
+
+        B = Splines.naturalSpline(p)
 
         c1 = path.curve(*A)
         c2 = path.curve(*B)

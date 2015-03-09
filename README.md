@@ -9,7 +9,7 @@ Missing Features are:
 
 * caps 
 
-Open paths are usually thought to end in a "cap" when stroked, this is plainly not implemented yet.
+Open paths are usually thought to end in a "cap" when stroked, at this time only "butt" cap is implemented.
 
 * rigorous treatment of self-intersections
 

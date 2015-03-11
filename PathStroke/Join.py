@@ -24,12 +24,12 @@ def roundJoin(p1, p2, x, y, dist):
     beta = (alpha + delta) * 0.5
 
     if (abs(angle) < math.pi / 2):
-        
+
         p = []
 
-        for stop in range(0,4):
+        for stop in range(0, 4):
 
-            beta = alpha + angle/3.0*stop 
+            beta = alpha + angle / 3.0 * stop
 
             (x1, y1) = (x - math.cos(beta) * abs(dist),
                         y - math.sin(beta) * abs(dist))
@@ -44,9 +44,9 @@ def roundJoin(p1, p2, x, y, dist):
 
         p = []
 
-        for stop in range(0,4):
+        for stop in range(0, 4):
 
-            beta = alpha + angle/6.0*stop 
+            beta = alpha + angle / 6.0 * stop
 
             (x1, y1) = (x - math.cos(beta) * abs(dist),
                         y - math.sin(beta) * abs(dist))
@@ -57,9 +57,9 @@ def roundJoin(p1, p2, x, y, dist):
 
         p = []
 
-        for stop in range(3,7):
+        for stop in range(3, 7):
 
-            beta = alpha + angle/6.0*stop 
+            beta = alpha + angle / 6.0 * stop
 
             (x1, y1) = (x - math.cos(beta) * abs(dist),
                         y - math.sin(beta) * abs(dist))

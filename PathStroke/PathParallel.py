@@ -1,6 +1,6 @@
 
-import pyx 
-import Vector 
+import pyx
+import Vector
 import CurveParallel
 import Join
 
@@ -96,7 +96,7 @@ def pathParallel(skeleton, dist=10, joinType='bevel'):
             x1 = (Vector(*currentPoint) + normal)
 
             parallelSegment = pyx.path.line(x0.x[0], x0.x[1],
-                                        x1.x[0], x1.x[1])
+                                            x1.x[0], x1.x[1])
 
         elif isinstance(apathitem, pyx.path.curveto):
 
@@ -182,7 +182,7 @@ def pathParallel(skeleton, dist=10, joinType='bevel'):
         if len(parallel) > 0:
 
             parallel = parallel << previousParallelSegment
-            
+
         else:
 
             parallel = previousParallelSegment

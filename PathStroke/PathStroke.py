@@ -20,6 +20,7 @@ import PathParallel
 import Cap
 import pyx
 
+
 def pathStroke(skeleton, radius, join, cap):
     """
     Stroke a pyx path with given half-width, join type ('round', 'miter' or
@@ -31,10 +32,10 @@ def pathStroke(skeleton, radius, join, cap):
     l = PathParallel.pathParallel(skeleton,  radius, join)
     r = PathParallel.pathParallel(skeleton, -radius, join)
 
-    if not(isinstance(skeleton[-1],pyx.path.closepath)):
+    if not(isinstance(skeleton[-1], pyx.path.closepath)):
         if cap == 'butt':
-            return [Cap.capButt(l,r),None]
+            return [Cap.capButt(l, r), None]
         else:
             raise Exception("Unknown cap type %s" % cap)
 
-    return [l,r]
+    return [l, r]

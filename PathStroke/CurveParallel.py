@@ -2,6 +2,7 @@
 import Splines
 import Util
 
+
 def checkParallel(curve, parallel, dist):
     """
     Measure an error between a curve and a proposed parallel

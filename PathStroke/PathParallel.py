@@ -1,7 +1,6 @@
 
-from pyx import *
-from Vector import *
-
+import pyx 
+import Vector 
 import CurveParallel
 import Join
 
@@ -45,11 +44,11 @@ def mergeCurves(curves):
     """
     Merge several curve segments
     """
-    p = path.curve(*curves[0])
+    p = pyx.pyx.path.curve(*curves[0])
 
     for a in curves[1:]:
 
-        c = path.curve(*a)
+        c = pyx.path.curve(*a)
 
         s = p.intersect(c)
 
@@ -66,9 +65,7 @@ def mergeCurves(curves):
 
 def pathParallel(skeleton, dist=10, joinType='bevel'):
 
-    strokes = []
-
-    parallel = path.path()
+    parallel = pyx.path.path()
 
     lastPoint = None
     previousParallelSegment = None
@@ -79,14 +76,14 @@ def pathParallel(skeleton, dist=10, joinType='bevel'):
 
         assert not(close)
 
-        if isinstance(apathitem, path.moveto):
+        if isinstance(apathitem, pyx.path.moveto):
 
             lastPoint = (apathitem.x_pt, apathitem.y_pt)
             currentPoint = lastPoint
 
             continue
 
-        elif isinstance(apathitem, path.lineto):
+        elif isinstance(apathitem, pyx.path.lineto):
 
             lastPoint = currentPoint
             currentPoint = (apathitem.x_pt, apathitem.y_pt)
@@ -98,10 +95,10 @@ def pathParallel(skeleton, dist=10, joinType='bevel'):
             x0 = (Vector(*lastPoint) + normal)
             x1 = (Vector(*currentPoint) + normal)
 
-            parallelSegment = path.line(x0.x[0], x0.x[1],
+            parallelSegment = pyx.path.line(x0.x[0], x0.x[1],
                                         x1.x[0], x1.x[1])
 
-        elif isinstance(apathitem, path.curveto):
+        elif isinstance(apathitem, pyx.path.curveto):
 
             lastPoint = currentPoint
             currentPoint = (apathitem.x3_pt, apathitem.y3_pt)
@@ -114,7 +111,7 @@ def pathParallel(skeleton, dist=10, joinType='bevel'):
 
             parallelSegment = mergeCurves(curves)
 
-        elif isinstance(apathitem, path.closepath):
+        elif isinstance(apathitem, pyx.path.closepath):
 
             close = True
 
@@ -125,8 +122,8 @@ def pathParallel(skeleton, dist=10, joinType='bevel'):
 
         if not(parallelSegment is None):
 
-            (x, y) = (unit.topt(lastPoint[0]),
-                      unit.topt(lastPoint[1]))
+            (x, y) = (pyx.unit.topt(lastPoint[0]),
+                      pyx.unit.topt(lastPoint[1]))
 
             if not(previousParallelSegment is None):
 
@@ -160,8 +157,8 @@ def pathParallel(skeleton, dist=10, joinType='bevel'):
 
                 parallel = parallel << previousParallelSegment
 
-                (x, y) = (unit.topt(currentPoint[0]),
-                          unit.topt(currentPoint[1]))
+                (x, y) = (pyx.unit.topt(currentPoint[0]),
+                          pyx.unit.topt(currentPoint[1]))
 
                 joinSegment = Join.joinPaths(joinType,
                                              parallel,
@@ -169,7 +166,7 @@ def pathParallel(skeleton, dist=10, joinType='bevel'):
                                              x, y, dist)
 
                 parallel = parallel << joinSegment
-                parallel.append(path.closepath())
+                parallel.append(pyx.path.closepath())
 
             else:
                 assert len(s[0]) == 1
@@ -178,7 +175,7 @@ def pathParallel(skeleton, dist=10, joinType='bevel'):
                     s[1])[0]
 
                 parallel = parallel << previousParallelSegment
-                parallel.append(path.closepath())
+                parallel.append(pyx.path.closepath())
 
     if (not(close) and (not(previousParallelSegment is None))):
 

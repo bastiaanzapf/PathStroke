@@ -4,7 +4,6 @@
 #
 # http://graphics.pixar.com/people/derose/publications/CubicClassification/paper.pdf
 
-import operator
 import math
 import numpy
 

@@ -1,11 +1,6 @@
 
-from pyx import *
-
-from numpy import *
-from numpy.linalg import *
 import Splines
-from Util import *
-
+import Util
 
 def checkParallel(curve, parallel, dist):
     """
@@ -19,8 +14,8 @@ def checkParallel(curve, parallel, dist):
         a = i / 8.0
         p1 = Splines.splinePoint(curve, a)
         p2 = Splines.splinePoint(parallel, a)
-        weight = pyxLen(Splines.splineTangent(parallel, a)) / 8.0
-        error += (pyxLen(pyxSub(p1, p2)) - dist)**2 * weight
+        weight = Util.pyxLen(Splines.splineTangent(parallel, a)) / 8.0
+        error += (Util.pyxLen(Util.pyxSub(p1, p2)) - dist)**2 * weight
 
     return error
 

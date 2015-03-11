@@ -1,5 +1,5 @@
 
-from pyx import *
+import pyx
 import math
 import Splines
 
@@ -10,42 +10,18 @@ def roundJoin(p1, p2, x, y, dist):
     p1 and p2
     """
 
-    # this has to be cleaned up
-
-    t0 = p1.tangent(p1.end(), 1)[0][0]
-
-    t1 = p2.tangent(p2.begin(), 1)[0][0]
-
-    (dx1, dy1) = (unit.topt(t0.x1_pt), unit.topt(t0.y1_pt))
-    (dx2, dy2) = (unit.topt(t1.x1_pt), unit.topt(t1.y1_pt))
-
     (x0, y0) = p1.atend()
     (x1, y1) = p2.atbegin()
 
-    (x0, y0) = (unit.topt(x0), unit.topt(y0))
-    (x1, y1) = (unit.topt(x1), unit.topt(y1))
-
-    p1_ = (x0, y0)
-    p2_ = (x1, y1)
-
-    assert isinstance(p1_, tuple)
-    assert isinstance(p2_, tuple)
-
-    (x0, y0) = p1_
-    (x3, y3) = p2_
-
-    (dx0, dy0) = (x - x0, y - y0)
-    (dx3, dy3) = (x - x3, y - y3)
+    (dx0, dy0) = (pyx.unit.topt(x - x0), pyx.unit.topt(y - y0))
+    (dx1, dy1) = (pyx.unit.topt(x - x1), pyx.unit.topt(y - y1))
 
     alpha = math.atan2(dy0, dx0)
-    delta = math.atan2(dy3, dx3)
+    delta = math.atan2(dy1, dx1)
 
     angle = delta - alpha
 
     beta = (alpha + delta) * 0.5
-
-    (xs, ys) = (x - math.cos(beta) * abs(dist),
-                y - math.sin(beta) * abs(dist))
 
     if (abs(angle) < math.pi / 2):
         
@@ -62,7 +38,7 @@ def roundJoin(p1, p2, x, y, dist):
 
         A = Splines.naturalSpline(p)
 
-        return path.curve(*A)
+        return pyx.path.curve(*A)
 
     else:
 
@@ -92,8 +68,8 @@ def roundJoin(p1, p2, x, y, dist):
 
         B = Splines.naturalSpline(p)
 
-        c1 = path.curve(*A)
-        c2 = path.curve(*B)
+        c1 = pyx.path.curve(*A)
+        c2 = pyx.path.curve(*B)
 
         return c1 << c2
 
@@ -102,8 +78,8 @@ def hollowJoin(p1, p2, x, y, dist):
     (x0, y0) = p1.atend()
     (x3, y3) = p2.atbegin()
 
-    (x0, y0) = (unit.topt(x0), unit.topt(y0))
-    (x3, y3) = (unit.topt(x3), unit.topt(y3))
+    (x0, y0) = (pyx.unit.topt(x0), pyx.unit.topt(y0))
+    (x3, y3) = (pyx.unit.topt(x3), pyx.unit.topt(y3))
 
     (dx0, dy0) = (x0 - x, y0 - y)
     (dx3, dy3) = (x3 - x, y3 - y)
@@ -124,7 +100,7 @@ def hollowJoin(p1, p2, x, y, dist):
     (x2, y2) = (mangle[0] - math.cos(beta) * dist,
                 mangle[1] - math.sin(beta) * dist)
 
-    return path.curve(
+    return pyx.path.curve(
         *Splines.naturalSpline([(x0, y0), (x1, y1), (x2, y2), (x3, y3)])
     )
 
@@ -158,7 +134,7 @@ def joinPaths(joinType, p1, p2, x, y, dist):
         (x0, y0) = p1.atend()
         (x1, y1) = p2.atbegin()
 
-        return path.line(x0, y0, x1, y1)
+        return pyx.path.line(x0, y0, x1, y1)
 
     if (joinType == 'miter'):
 

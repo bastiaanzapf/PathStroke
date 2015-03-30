@@ -17,6 +17,11 @@ DB = numpy.mat([[-3,  6, -3],
                 [-9,  6, 0],
                 [3,  0, 0]]).transpose()
 
+DDB = numpy.mat([[-6, 6],
+                 [18, -12],
+                 [-18,  6],
+                 [6,  0]]).transpose()
+
 
 def splinePoint(c, at):
 
@@ -43,6 +48,9 @@ def splineTangent(c, at):
 
 
 def parallelPoint(c, at, dist):
+    """
+    return the point at distance dist normal to c in parameter at
+    """
     assert len(c) == 8
     assert isinstance(dist, (int, float))
 
@@ -59,6 +67,18 @@ def parallelPoint(c, at, dist):
 
     return (x + dist * normal[0], y + dist * normal[1])
 
+def angledPoint(c, at, angle, dist):
+    """
+    return the point at distance dist at given angle in parameter at
+    """
+    assert len(c) == 8
+    assert isinstance(dist, (int, float))
+
+    (x, y) = splinePoint(c, at)
+    (dx, dy) = splineTangent(c, at)
+
+    return (x + dist * math.cos(angle), 
+            y + dist * math.sin(angle))
 
 def bernshteinValues(c):
     v = numpy.mat([c**3, c**2, c, 1])
@@ -255,6 +275,142 @@ def splineSplit(curve, parameter=0.5):
 
     return newcurves
 
+def splineJoin(curve1, curve2):
+    """
+    De casteljau's algorithm in reverse: join two adjacent splines.
+    This only gives sensible results when the curves actually fit.
+    """
+    assert len(curve1) == 8
+    assert len(curve2) == 8
+
+    p10 = (curve1[0], curve1[1])
+    p11 = (curve1[2], curve1[3])
+    p12 = (curve1[4], curve1[5])
+    p13 = (curve1[6], curve1[7])
+
+    p20 = (curve2[0], curve2[1])
+    p21 = (curve2[2], curve2[3])
+    p22 = (curve2[4], curve2[5])
+    p23 = (curve2[6], curve2[7])
+
+    if math.hypot(p13[0] - p20[0], p13[1] - p20[1]) > 1e-10:
+        raise Exception("curve 2 must start where curve 1 ends")
+
+    a = p12[0] - p13[0]
+    b = p20[0] - p21[0]
+    c = p12[1] - p13[1]
+    d = p20[1] - p21[1]
+
+    ratio1 = (math.hypot(a,c) / math.hypot(b,d))
+
+    parameter1 = (ratio1 + 1.0) / ratio1
+
+    ratio2 = 1.0 / ratio1
+
+    parameter2 = (ratio2 + 1.0) / ratio2
+
+    p4 = (p10[0] + (p11[0] - p10[0]) * parameter1,
+          p10[1] + (p11[1] - p10[1]) * parameter1)
+
+    p5 = (p23[0] + (p22[0] - p23[0]) * parameter2,
+          p23[1] + (p22[1] - p23[1]) * parameter2)
+
+    return (p10[0], p10[1],
+            p4[0], p4[1],
+            p5[0], p5[1],
+            p23[0], p23[1])
+
+def tangential(c, dx, dy):
+    """
+    Find parameter(s) where a curve c is tangential to the vector (dx, dy)
+    """
+    assert len(c)==8
+
+    x = numpy.mat(c[0::2]).transpose()
+    qx = dy * DB * x
+    y = numpy.mat(c[1::2]).transpose()
+    qy = dx * DB * y
+
+    valid = lambda x: (x>=0 and x<=1)
+
+    return filter(valid, numpy.roots(map(float,qx-qy)))
+
+def tangentRanges(c):
+    """
+    Return maximal and minimal x and y derivatives along the spline parameter
+    """
+
+    x = numpy.mat(c[0::2]).transpose()
+    qx = DDB * x
+    y = numpy.mat(c[1::2]).transpose()
+    qy = DDB * y
+
+    if qx[0]!=0:
+        exx = - float(qx[1]) / qx[0]
+    else:
+        exx = -1
+
+    if qy[0]!=0:
+        exy = - float(qy[1]) / qy[0]
+    else:
+        exy = -1
+
+    (v0x, v0y)   = splineTangent(c, 0)
+    (exxv, dummy) = splineTangent(c, exx)
+    (dummy,exyv ) = splineTangent(c, exy)
+    (v1x, v1y)   = splineTangent(c, 1)
+
+    if (exx>=0 and exx<1):
+        minx = min(exxv, v0x, v1x)
+        maxx = max(exxv, v0x, v1x)
+    else:
+        minx = min(v0x, v1x)
+        maxx = max(v0x, v1x)
+
+    if (exy>=0 and exy<1):
+        miny = min(exyv, v0y, v1y)
+        maxy = max(exyv, v0y, v1y)
+    else:
+        miny = min(v0y, v1y)
+        maxy = max(v0y, v1y)
+    
+    return (minx, maxx, miny, maxy)
+
+
+def inRange(x0, y0, x1, y1, alpha, beta):
+    """
+    If any point of the rectangle (x0, y0), (x1, y1) is inside the area
+    spanned by two lines with angles alpha and beta, respectively, return true.
+    """
+    angles = [math.atan2(y0, x0), math.atan2(y0, x1), 
+              math.atan2(y1, x1), math.atan2(y1, x0)]
+
+    if (max(angles) >= alpha and min(angles) < beta):
+        return True
+
+    return False
+
+def findRotatingTangent(c, alpha, beta, parameter0 = 0, parameter1 = 1):
+    """
+    Find points that are tangential to a line of angle 
+    (alpha * (1 - parameter)) + (beta * parameter)
+    """
+    (minx, maxx, miny, maxy) = tangentRanges(c)
+
+    assert(parameter1 > parameter0)        
+
+    if inRange(minx, miny, maxx, maxy, alpha, beta):
+        if abs(parameter1 - parameter0)<1e-5:
+            return [parameter0]
+        [c1, c2] = splineSplit(c)
+        half = (alpha + beta) * 0.5
+        halfparameter = (parameter0 + parameter1) * 0.5
+        A = findRotatingTangent(c1, alpha, half, parameter0, halfparameter)
+        B = findRotatingTangent(c2, half, beta, halfparameter, parameter1)
+        return A + B
+    else:
+        return []
+        
 
 def integral(c):
     """

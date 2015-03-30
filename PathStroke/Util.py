@@ -43,3 +43,8 @@ def pyxSplit(a, parameter=0.5):
                                       p6[0], p6[1],
                                       p3[0], p3[1]))
     return newcurves
+
+
+def rotate(x, y, angle):
+    return (x * math.cos(angle) - y * math.sin(angle),
+            x * math.sin(angle) + y * math.cos(angle))

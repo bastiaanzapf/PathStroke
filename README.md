@@ -5,6 +5,8 @@ Vector graphics software usually provides a "path stroking" function, that is, t
 
 This is a library that implements basic path stroking via the pyx graphics package, which I plan to remove in the long term, so the resulting code could be transformed to another language more easily.
 
+"Pen Stroking" as in metafont is available now.
+
 Missing Features are:
 
 * caps 

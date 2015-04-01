@@ -133,43 +133,5 @@ def penParallel(c, dist, angle0, angle1, depth, dx0=None, dy0=None):
 
     proposal = Splines.naturalSpline([p0, p1, p2, p3])
 
-    if depth > 5:
-        return [proposal]
+    return [proposal]
 
-    error = checkPen(c, proposal, angle0, angle1, dist)
-
-    if (error < 0.01):
-        return [proposal]
-
-    parts1 = Splines.splineSplit(c, 1 / 2.0)
-
-    angleH = (angle0 + angle1) * 0.5
-
-    p11 = penParallel(parts1[0], dist, angle0, angleH, depth + 1)
-    p12 = penParallel(parts1[1], dist, angleH, angle1, depth + 1)
-
-    # try splits at 1/3 or 1/5
-
-    if (depth < 2):
-
-        parts2 = Splines.splineSplit(c, 1 / 3.0)
-
-        angleT = (angle0 + 2 * angle1) / 3.0
-
-        p21 = penParallel(parts2[0], dist, angle0, angleT, depth + 1)
-        p22 = penParallel(parts2[1], dist, angleT, angle1, depth + 1)
-
-        if (len(p11) + len(p12) > len(p21) + len(p22)):
-            return p21 + p22
-
-        parts3 = Splines.splineSplit(c, 1 / 5.0)
-
-        angleQ = (angle0 + 4 * angle1) / 5.0
-
-        p31 = penParallel(parts3[0], dist, angle0, angleQ, depth + 1)
-        p32 = penParallel(parts3[1], dist, angleQ, angle1, depth + 1)
-
-        if (len(p11) + len(p12) > len(p31) + len(p32)):
-            return p31 + p32
-
-    return p11 + p12

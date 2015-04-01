@@ -75,8 +75,9 @@ def angledPoint(c, at, angle, dist):
     assert isinstance(dist, (int, float))
 
     (x, y) = splinePoint(c, at)
-    (dx, dy) = splineTangent(c, at)
 
+#    (dx, dy) = splineTangent(c, at)
+#    print (x,y)
     return (x + dist * math.cos(angle), 
             y + dist * math.sin(angle))
 
@@ -275,6 +276,18 @@ def splineSplit(curve, parameter=0.5):
 
     return newcurves
 
+def splineMultipleSplit(curve, splits):
+    curves = []
+    carry = 0
+
+    for a in splits + [1]:
+        helper = splineSplit(curve, carry)[1]
+        helper = splineSplit(helper, (a-carry)/(1.0-carry))[0]
+        curves.append(helper)
+        carry = a
+
+    return curves
+
 def splineJoin(curve1, curve2):
     """
     De casteljau's algorithm in reverse: join two adjacent splines.
@@ -382,6 +395,9 @@ def inRange(x0, y0, x1, y1, alpha, beta):
     If any point of the rectangle (x0, y0), (x1, y1) is inside the area
     spanned by two lines with angles alpha and beta, respectively, return true.
     """
+
+    assert (beta >= alpha)
+
     angles = [math.atan2(y0, x0), math.atan2(y0, x1), 
               math.atan2(y1, x1), math.atan2(y1, x0)]
 
@@ -398,7 +414,7 @@ def findRotatingTangent(c, alpha, beta, parameter0 = 0, parameter1 = 1):
     (minx, maxx, miny, maxy) = tangentRanges(c)
 
     assert(parameter1 > parameter0)        
-
+    
     if inRange(minx, miny, maxx, maxy, alpha, beta):
         if abs(parameter1 - parameter0)<1e-5:
             return [parameter0]

@@ -44,6 +44,7 @@ def mergeCurves(curves):
     """
     Merge several curve segments
     """
+
     p = pyx.path.curve(*curves[0])
 
     for a in curves[1:]:
